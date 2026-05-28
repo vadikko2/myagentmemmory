@@ -1,6 +1,6 @@
 # Timeweb Cloud Apps — deploy manifest.
 #
-# nginx listens on container ports 80 AND 8080 -> agentmemory 127.0.0.1:8080
+# nginx :80 + socat :8080/:3111 -> agentmemory 127.0.0.1:8080 (no double-bind on 8080)
 # First ports: entry is 8080:8080 — Timeweb often routes the domain to that container port.
 # Also publish 80 for platforms that route to container :80.
 #

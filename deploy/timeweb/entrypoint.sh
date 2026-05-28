@@ -136,20 +136,19 @@ else
   echo "agentmemory: automatic S3 backups disabled (set ENABLE_BACKUPS=true and AWS_S3_BUCKET)"
 fi
 
-start_port_compat() {
+start_public_listeners() {
   if [ "${ENABLE_PORT_COMPAT:-true}" != "true" ]; then
     return 0
   fi
-  # 3111 only — nginx already binds 80 and 8080
-  if [ "$HTTP_PORT" != "3111" ]; then
-    socat "TCP-LISTEN:3111,bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
-    echo "port-compat: 0.0.0.0:3111 -> 127.0.0.1:${HTTP_PORT}"
-  fi
+  # Timeweb may route to container :8080 or :3111 — socat only (nginx uses :80)
+  socat "TCP-LISTEN:8080,bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
+  echo "public-listener: 0.0.0.0:8080 -> 127.0.0.1:${HTTP_PORT}"
+  socat "TCP-LISTEN:3111,bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
+  echo "public-listener: 0.0.0.0:3111 -> 127.0.0.1:${HTTP_PORT}"
 }
 
 if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
   mkdir -p /tmp/nginx-client-body /tmp/nginx-proxy
-  start_port_compat
   gosu "$RUN_AS" agentmemory "$@" &
   AM_PID=$!
 
@@ -175,9 +174,11 @@ if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
     exit 1
   fi
 
-  echo "nginx: starting on 0.0.0.0:80 and 0.0.0.0:8080 -> ${HTTP_HOST}:${HTTP_PORT}"
+  start_public_listeners
+
+  echo "nginx: starting on 0.0.0.0:80 -> ${HTTP_HOST}:${HTTP_PORT}"
   (
-    sleep 15
+    sleep 10
     echo "=== post-start connectivity check ==="
     curl -sf "http://127.0.0.1:80/agentmemory/livez" && echo " OK :80/livez" || echo " FAIL :80/livez"
     curl -sf "http://127.0.0.1:8080/agentmemory/livez" && echo " OK :8080/livez" || echo " FAIL :8080/livez"
@@ -187,5 +188,4 @@ if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
   exec nginx -c /etc/agentmemory/nginx.conf -g 'daemon off;'
 fi
 
-start_port_compat
 exec gosu "$RUN_AS" agentmemory "$@"
