@@ -140,11 +140,11 @@ start_public_listeners() {
   if [ "${ENABLE_PORT_COMPAT:-true}" != "true" ]; then
     return 0
   fi
-  # Timeweb may route to container :8080 or :3111 — socat only (nginx uses :80)
-  socat "TCP-LISTEN:8080,bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
-  echo "public-listener: 0.0.0.0:8080 -> 127.0.0.1:${HTTP_PORT}"
-  socat "TCP-LISTEN:3111,bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
-  echo "public-listener: 0.0.0.0:3111 -> 127.0.0.1:${HTTP_PORT}"
+  # Optional: old panel configs targeting :3111 (do not bind :8080 — docker may reserve it)
+  if ! ss -tln 2>/dev/null | grep -q ':3111 '; then
+    socat "TCP-LISTEN:3111,bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
+    echo "public-listener: 0.0.0.0:3111 -> 127.0.0.1:${HTTP_PORT}"
+  fi
 }
 
 if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
@@ -181,7 +181,7 @@ if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
     sleep 10
     echo "=== post-start connectivity check ==="
     curl -sf "http://127.0.0.1:80/agentmemory/livez" && echo " OK :80/livez" || echo " FAIL :80/livez"
-    curl -sf "http://127.0.0.1:8080/agentmemory/livez" && echo " OK :8080/livez" || echo " FAIL :8080/livez"
+    curl -sf "http://127.0.0.1:${HTTP_PORT}/agentmemory/livez" && echo " OK app:${HTTP_PORT}/livez" || echo " FAIL app:${HTTP_PORT}/livez"
     ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null || true
     echo "=== end connectivity check ==="
   ) &
