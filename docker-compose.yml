@@ -1,0 +1,21 @@
+# Local smoke-test only. Timeweb Cloud Apps forbids `volumes:` in compose manifests;
+# mount /data via the Apps Storage UI in production.
+services:
+  agentmemory:
+    build:
+      context: ./deploy/timeweb
+      dockerfile: Dockerfile
+    ports:
+      - "3111:3111"
+    volumes:
+      - ./.data:/data
+    environment:
+      ENABLE_BACKUPS: "${ENABLE_BACKUPS:-false}"
+      ENABLE_AUTO_RESTORE: "${ENABLE_AUTO_RESTORE:-true}"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:3111/agentmemory/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    restart: unless-stopped
