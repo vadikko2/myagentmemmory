@@ -14,7 +14,7 @@ Deploy artifacts for [agentmemory](https://github.com/rohitg00/agentmemory) on *
 
 Use the root **`docker-compose.yml`** in Apps (Git deploy). It has **no `volumes`** — attach persistent storage at **`/data`** in the Apps → Storage panel.
 
-Set app port **3111**, health path **`/agentmemory/livez`**, and S3 env vars (see [docs/TIMEWEB_DEPLOY.md](docs/TIMEWEB_DEPLOY.md)).
+Set **container port 3111** in the panel (Timeweb nginx serves **80/443** on the domain). Health: **`/agentmemory/livez`**. Test: `curl https://<app>.twc1.net/agentmemory/livez` (no `:3111`). See [docs/TIMEWEB_DEPLOY.md](docs/TIMEWEB_DEPLOY.md).
 
 ## Local smoke test
 

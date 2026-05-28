@@ -4,7 +4,7 @@
 
 ## Что получится
 
-- HTTPS API на порту **3111** (`/agentmemory/*`)
+- HTTPS API через домен Timeweb (nginx **80/443** → контейнер **3111**, путь `/agentmemory/*`)
 - Секрет `AGENTMEMORY_SECRET` в `/data/.hmac` (генерируется при первом запуске)
 - Автобэкап `/data` в S3 каждые 6 часов (опционально)
 - Автовосстановление из последнего бэкапа при пустом томе (опционально)
@@ -39,7 +39,9 @@
 2. Timeweb Apps → **Создать приложение → Docker Compose**.
 3. Укажите репозиторий и ветку. В корне должен быть **`docker-compose.yml`** (без секции `volumes` — это требование Timeweb).
 4. В панели Apps → **Storage**: смонтируйте persistent volume в **`/data`** (1+ GB).
-5. Порт приложения: **3111**, health check: **`/agentmemory/livez`**.
+5. **Порт контейнера** в панели: **3111** (не 80). Health check path: **`/agentmemory/livez`**.
+6. Публичный URL **без `:3111`**: `http://<app>.twc1.net/agentmemory/livez` (Timeweb nginx проксирует 80/443 → 3111).
+7. Опционально в env: `APP_PUBLIC_URL=https://<app>.twc1.net` (для CORS).
 
 Проверка манифеста локально:
 
@@ -74,9 +76,10 @@ docker push your-registry/agentmemory:latest
 
 | Параметр | Значение |
 |----------|----------|
-| Порт | **3111** |
-| Health check | **`/agentmemory/livez`** |
-| Grace period | ≥ **30** секунд |
+| Порт контейнера | **3111** (в панели Apps; не путать с 80) |
+| Health check path | **`/agentmemory/livez`** |
+| Grace period | ≥ **60** секунд (cold start) |
+| Публичный доступ | `https://<app>.twc1.net/...` **без** `:3111` |
 | Storage | Persistent volume, mount **`/data`**, ≥ 1 GB |
 
 Включите **Automatic backups** для тома в панели Storage (дополнительный слой защиты).
@@ -125,11 +128,15 @@ Restore completed. HMAC secret prefix: ...
 Замените `<app-url>` и `<secret>`:
 
 ```bash
-curl -sf "https://<app-url>/agentmemory/livez"
+# Через nginx Timeweb (правильно) — без :3111
+curl -sv "http://<app>.twc1.net/agentmemory/livez"
+curl -sv "https://<app>.twc1.net/agentmemory/livez"
 
 curl -sf -H "Authorization: Bearer <secret>" \
-  "https://<app-url>/agentmemory/livez"
+  "https://<app>.twc1.net/agentmemory/livez"
 ```
+
+Прямой `:3111` на домене часто **не отвечает** (таймаут) — это нормально для Apps; используйте URL без порта.
 
 ## 6. Подключите Cursor
 

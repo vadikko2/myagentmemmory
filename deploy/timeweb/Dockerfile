@@ -29,7 +29,10 @@ RUN printf '{"name":"agentmemory-deploy","version":"1.0.0","private":true,"overr
  && ln -s /opt/agentmemory/node_modules/.bin/agentmemory /usr/local/bin/agentmemory
 
 ENV AGENTMEMORY_III_VERSION=${III_VERSION} \
-    TINI_SUBREAPER=1
+    TINI_SUBREAPER=1 \
+    PORT=3111 \
+    III_REST_PORT=3111 \
+    III_STREAMS_PORT=3112
 
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/agentmemory-entrypoint.sh
 COPY --chmod=0755 backup.sh /usr/local/bin/backup.sh

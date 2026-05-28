@@ -2,7 +2,7 @@
 
 ## 1. Получите URL и секрет
 
-- **URL:** `https://<your-app>.timeweb.cloud` (домен из панели Apps)
+- **URL:** `https://<your-app>.twc1.net` (домен из панели Apps, **без** `:3111`)
 - **Секрет:** `AGENTMEMORY_SECRET` из логов первого запуска (64 hex-символа)
 
 Секрет хранится на сервере в `/data/.hmac` и попадает в S3-бэкапы вместе с данными.
@@ -18,7 +18,7 @@
       "command": "npx",
       "args": ["-y", "@agentmemory/mcp"],
       "env": {
-        "AGENTMEMORY_URL": "https://your-app.timeweb.cloud",
+        "AGENTMEMORY_URL": "https://your-app.twc1.net",
         "AGENTMEMORY_SECRET": "paste-64-hex-secret-here"
       }
     }

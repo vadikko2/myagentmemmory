@@ -1,5 +1,13 @@
-# Timeweb Cloud Apps — deploy manifest (no `volumes:`; mount /data in Apps → Storage).
-# Local dev with a bind mount: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Timeweb Cloud Apps — deploy manifest.
+#
+# How Timeweb routing works:
+#   - Ports 80/443 on the domain are Timeweb nginx (do NOT map "80:3111" here).
+#   - This file maps container port 3111; nginx proxies 80/443 -> 3111.
+#   - agentmemory MUST be the first service (only the first gets the domain proxy).
+#   - Public URL: http(s)://<app>.twc1.net/agentmemory/livez  — without :3111
+#   - Mount /data via Apps -> Storage (volumes: forbidden in compose on Timeweb).
+#
+# Local dev: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 version: "3.9"
 
 services:
@@ -10,6 +18,11 @@ services:
     ports:
       - "3111:3111"
     environment:
+      PORT: "3111"
+      III_REST_PORT: "3111"
+      III_STREAMS_PORT: "3112"
+      # Optional: set in Timeweb panel for CORS, e.g. https://vadikko2-myagentmemmory-64e9.twc1.net
+      APP_PUBLIC_URL: "${APP_PUBLIC_URL:-}"
       ENABLE_BACKUPS: "${ENABLE_BACKUPS:-false}"
       ENABLE_AUTO_RESTORE: "${ENABLE_AUTO_RESTORE:-true}"
       AWS_S3_BUCKET: "${AWS_S3_BUCKET:-}"
@@ -24,4 +37,4 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 45s
+      start_period: 60s
