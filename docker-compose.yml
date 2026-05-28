@@ -1,10 +1,11 @@
 # Timeweb Cloud Apps — deploy manifest.
 #
-# Routing: Timeweb nginx (80/443 on domain) -> container :8080 -> internal nginx -> agentmemory :3111
-# Public URL: http(s)://<app>.twc1.net/agentmemory/livez  (no port in URL)
-# Panel: container port 8080, health path /agentmemory/livez, Storage mount /data
+# agentmemory listens on 0.0.0.0:8080 (Timeweb default container port).
+# Domain 80/443 -> Timeweb edge -> container :8080
+# Public: http(s)://<app>.twc1.net/agentmemory/livez
 #
-# Local direct mode: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Panel: port 8080, health /agentmemory/livez, Storage /data
+# Local: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 version: "3.9"
 
 services:
@@ -15,10 +16,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      ENABLE_NGINX_PROXY: "true"
-      PROXY_PORT: "8080"
-      III_REST_PORT: "3111"
-      III_STREAMS_PORT: "3112"
+      ENABLE_NGINX_PROXY: "false"
+      PORT: "8080"
+      III_REST_PORT: "8080"
+      III_STREAMS_PORT: "8081"
       APP_PUBLIC_URL: "${APP_PUBLIC_URL:-}"
       ENABLE_BACKUPS: "${ENABLE_BACKUPS:-false}"
       ENABLE_AUTO_RESTORE: "${ENABLE_AUTO_RESTORE:-true}"

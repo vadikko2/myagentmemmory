@@ -1,4 +1,4 @@
-# Local dev: direct agentmemory on 3111 (no in-container nginx).
+# Local dev: agentmemory on 3111 (familiar port).
 services:
   agentmemory:
     ports:
@@ -6,6 +6,8 @@ services:
     environment:
       ENABLE_NGINX_PROXY: "false"
       PORT: "3111"
+      III_REST_PORT: "3111"
+      III_STREAMS_PORT: "3112"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:3111/agentmemory/livez"]
       start_period: 60s

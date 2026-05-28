@@ -31,10 +31,10 @@ RUN printf '{"name":"agentmemory-deploy","version":"1.0.0","private":true,"overr
 
 ENV AGENTMEMORY_III_VERSION=${III_VERSION} \
     TINI_SUBREAPER=1 \
-    ENABLE_NGINX_PROXY=true \
-    PROXY_PORT=8080 \
-    III_REST_PORT=3111 \
-    III_STREAMS_PORT=3112
+    ENABLE_NGINX_PROXY=false \
+    PORT=8080 \
+    III_REST_PORT=8080 \
+    III_STREAMS_PORT=8081
 
 COPY nginx.conf /etc/agentmemory/nginx.conf
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/agentmemory-entrypoint.sh

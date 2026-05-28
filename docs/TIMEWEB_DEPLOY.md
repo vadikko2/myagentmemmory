@@ -4,7 +4,7 @@
 
 ## Что получится
 
-- HTTPS API через домен Timeweb (nginx **80/443** → контейнер **3111**, путь `/agentmemory/*`)
+- HTTPS API через домен Timeweb (**80/443** → контейнер **8080**, путь `/agentmemory/*`)
 - Секрет `AGENTMEMORY_SECRET` в `/data/.hmac` (генерируется при первом запуске)
 - Автобэкап `/data` в S3 каждые 6 часов (опционально)
 - Автовосстановление из последнего бэкапа при пустом томе (опционально)
@@ -39,7 +39,7 @@
 2. Timeweb Apps → **Создать приложение → Docker Compose**.
 3. Укажите репозиторий и ветку. В корне должен быть **`docker-compose.yml`** (без секции `volumes` — это требование Timeweb).
 4. В панели Apps → **Storage**: смонтируйте persistent volume в **`/data`** (1+ GB).
-5. **Порт контейнера** в панели: **8080** (стандарт Timeweb; внутри контейнера nginx:8080 → agentmemory:3111). Health check path: **`/agentmemory/livez`**.
+5. **Порт контейнера** в панели: **8080**. Health check path: **`/agentmemory/livez`** (полный путь, не `/agentmemory/li`).
 6. Публичный URL **без порта**: `http://<app>.twc1.net/agentmemory/livez` (Timeweb 80/443 → контейнер **8080**).
 7. Опционально в env: `APP_PUBLIC_URL=https://<app>.twc1.net` (для CORS).
 
