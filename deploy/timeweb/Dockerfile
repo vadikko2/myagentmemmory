@@ -45,6 +45,6 @@ COPY --chmod=0755 backup.sh /usr/local/bin/backup.sh
 RUN touch /var/log/backup.log && chmod 666 /var/log/backup.log \
  && mkdir -p /tmp/nginx-client-body /tmp/nginx-proxy
 
-EXPOSE 80
+EXPOSE 80 8080
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/agentmemory-entrypoint.sh"]

@@ -1,12 +1,13 @@
 # Timeweb Cloud Apps — deploy manifest.
 #
-# Routing: domain :80/:443 -> Timeweb edge -> container :80 (nginx) -> agentmemory :8080
-# Do NOT map "8080:8080" — it reserves :8080 and breaks socat/nginx.
+# agentmemory listens on 0.0.0.0:8080; nginx on 0.0.0.0:80 -> :8080
+# Panel: set container port to 8080 OR 80 (both work after this fix)
+# Do NOT use "8080:8080" in ports — docker reserves :8080 and breaks the app bind
 #
-# compose "8080:80" = local test only (host 8080 -> container nginx :80)
-# Panel: container port 80, health /agentmemory/livez, Storage /data
+# Local test: curl http://localhost:8080/agentmemory/livez  (maps host 8080 -> container :8080)
+#             curl http://localhost:8081/agentmemory/livez  (maps host 8081 -> container :80 nginx)
 #
-# Local direct: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Local direct mode: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 version: "3.9"
 
 services:
@@ -15,12 +16,13 @@ services:
       context: ./deploy/timeweb
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "8080:8080"
+      - "8081:80"
     environment:
       ENABLE_NGINX_PROXY: "true"
       III_REST_PORT: "8080"
       III_STREAMS_PORT: "8081"
-      ENABLE_PORT_COMPAT: "true"
+      ENABLE_PORT_COMPAT: "false"
       APP_PUBLIC_URL: "${APP_PUBLIC_URL:-}"
       ENABLE_BACKUPS: "${ENABLE_BACKUPS:-false}"
       ENABLE_AUTO_RESTORE: "${ENABLE_AUTO_RESTORE:-true}"
@@ -32,7 +34,7 @@ services:
       AWS_S3_PREFIX: "${AWS_S3_PREFIX:-agentmemory-backups}"
       BACKUP_KEEP_COUNT: "${BACKUP_KEEP_COUNT:-7}"
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://127.0.0.1:80/agentmemory/livez"]
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/agentmemory/livez"]
       interval: 30s
       timeout: 10s
       retries: 5
