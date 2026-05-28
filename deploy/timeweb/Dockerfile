@@ -19,6 +19,7 @@ RUN apt-get update \
     gzip \
     awscli \
     cron \
+    nginx \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=iii-image /app/iii /usr/local/bin/iii
@@ -30,15 +31,19 @@ RUN printf '{"name":"agentmemory-deploy","version":"1.0.0","private":true,"overr
 
 ENV AGENTMEMORY_III_VERSION=${III_VERSION} \
     TINI_SUBREAPER=1 \
-    PORT=3111 \
+    ENABLE_NGINX_PROXY=true \
+    PROXY_PORT=8080 \
     III_REST_PORT=3111 \
     III_STREAMS_PORT=3112
 
+COPY nginx.conf /etc/agentmemory/nginx.conf
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/agentmemory-entrypoint.sh
 COPY --chmod=0755 backup.sh /usr/local/bin/backup.sh
 
-RUN touch /var/log/backup.log && chmod 666 /var/log/backup.log
+RUN touch /var/log/backup.log && chmod 666 /var/log/backup.log \
+ && mkdir -p /tmp/nginx-client-body /tmp/nginx-proxy
 
-EXPOSE 3111
+# Timeweb proxies domain 80/443 -> container 8080 (platform default when EXPOSE is set)
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/agentmemory-entrypoint.sh"]

@@ -39,8 +39,8 @@
 2. Timeweb Apps → **Создать приложение → Docker Compose**.
 3. Укажите репозиторий и ветку. В корне должен быть **`docker-compose.yml`** (без секции `volumes` — это требование Timeweb).
 4. В панели Apps → **Storage**: смонтируйте persistent volume в **`/data`** (1+ GB).
-5. **Порт контейнера** в панели: **3111** (не 80). Health check path: **`/agentmemory/livez`**.
-6. Публичный URL **без `:3111`**: `http://<app>.twc1.net/agentmemory/livez` (Timeweb nginx проксирует 80/443 → 3111).
+5. **Порт контейнера** в панели: **8080** (стандарт Timeweb; внутри контейнера nginx:8080 → agentmemory:3111). Health check path: **`/agentmemory/livez`**.
+6. Публичный URL **без порта**: `http://<app>.twc1.net/agentmemory/livez` (Timeweb 80/443 → контейнер **8080**).
 7. Опционально в env: `APP_PUBLIC_URL=https://<app>.twc1.net` (для CORS).
 
 Проверка манифеста локально:
@@ -76,7 +76,7 @@ docker push your-registry/agentmemory:latest
 
 | Параметр | Значение |
 |----------|----------|
-| Порт контейнера | **3111** (в панели Apps; не путать с 80) |
+| Порт контейнера | **8080** (в панели Apps; agentmemory внутри на 3111) |
 | Health check path | **`/agentmemory/livez`** |
 | Grace period | ≥ **60** секунд (cold start) |
 | Публичный доступ | `https://<app>.twc1.net/...` **без** `:3111` |

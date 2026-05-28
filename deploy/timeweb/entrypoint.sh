@@ -1,6 +1,7 @@
 #!/bin/sh
 # Timeweb Cloud Apps entrypoint for agentmemory.
-# Runs as root: chown /data, S3 restore, HMAC bootstrap, cron, then gosu node.
+# Runs as root: chown /data, S3 restore, HMAC, cron.
+# With ENABLE_NGINX_PROXY=true (default): nginx on :8080 -> agentmemory on 127.0.0.1:3111
 
 set -eu
 
@@ -8,16 +9,22 @@ DATA_DIR="${AGENTMEMORY_DATA_DIR:-/data}"
 HMAC_FILE="${AGENTMEMORY_HMAC_FILE:-/data/.hmac}"
 RUN_AS="node:node"
 III_CONFIG="/opt/agentmemory/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml"
+ENABLE_NGINX_PROXY="${ENABLE_NGINX_PROXY:-true}"
+PROXY_PORT="${PROXY_PORT:-8080}"
 
-# Timeweb Apps: set PORT=3111 in compose; platform nginx proxies 80/443 -> this port.
-HTTP_PORT="${PORT:-${III_REST_PORT:-3111}}"
+if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
+  HTTP_PORT="${III_REST_PORT:-3111}"
+  HTTP_HOST="127.0.0.1"
+else
+  HTTP_PORT="${PORT:-${III_REST_PORT:-3111}}"
+  HTTP_HOST="0.0.0.0"
+fi
+
 STREAM_PORT="${III_STREAMS_PORT:-3112}"
-HTTP_HOST="0.0.0.0"
 
 mkdir -p "$DATA_DIR"
 chown -R "$RUN_AS" "$DATA_DIR"
 
-# Optional public URL for CORS (e.g. https://your-app.twc1.net from Timeweb panel)
 CORS_PUBLIC_HTTP=""
 CORS_PUBLIC_HTTPS=""
 if [ -n "${APP_PUBLIC_URL:-}" ]; then
@@ -90,7 +97,11 @@ $( [ -n "$CORS_PUBLIC_HTTPS" ] && printf '          - "%s"\n' "$CORS_PUBLIC_HTTP
 EOF
 chown "$RUN_AS" "$III_CONFIG"
 
-echo "agentmemory: listening on ${HTTP_HOST}:${HTTP_PORT} (Timeweb nginx uses 80/443 -> ${HTTP_PORT})"
+if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
+  echo "agentmemory: internal ${HTTP_HOST}:${HTTP_PORT}; public nginx 0.0.0.0:${PROXY_PORT} (Timeweb 80/443 -> ${PROXY_PORT})"
+else
+  echo "agentmemory: listening on ${HTTP_HOST}:${HTTP_PORT}"
+fi
 
 if [ -n "${AWS_S3_BUCKET:-}" ]; then
   /usr/local/bin/backup.sh restore || echo "backup.sh restore: skipped or failed (continuing)"
@@ -123,6 +134,37 @@ if [ "${ENABLE_BACKUPS:-false}" = "true" ] && [ -n "${AWS_S3_BUCKET:-}" ]; then
   echo "agentmemory: S3 backup scheduler started (every 6 hours)"
 else
   echo "agentmemory: automatic S3 backups disabled (set ENABLE_BACKUPS=true and AWS_S3_BUCKET)"
+fi
+
+if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
+  mkdir -p /tmp/nginx-client-body /tmp/nginx-proxy
+  gosu "$RUN_AS" agentmemory "$@" &
+  AM_PID=$!
+
+  echo "agentmemory: waiting for http://${HTTP_HOST}:${HTTP_PORT}/agentmemory/livez ..."
+  i=0
+  while [ "$i" -lt 120 ]; do
+    if curl -sf "http://${HTTP_HOST}:${HTTP_PORT}/agentmemory/livez" >/dev/null 2>&1; then
+      echo "agentmemory: ready (pid ${AM_PID})"
+      break
+    fi
+    if ! kill -0 "$AM_PID" 2>/dev/null; then
+      echo "agentmemory: process exited before becoming ready" >&2
+      wait "$AM_PID" 2>/dev/null || true
+      exit 1
+    fi
+    i=$((i + 1))
+    sleep 1
+  done
+
+  if [ "$i" -ge 120 ]; then
+    echo "agentmemory: timeout after 120s waiting for livez" >&2
+    kill "$AM_PID" 2>/dev/null || true
+    exit 1
+  fi
+
+  echo "nginx: starting on 0.0.0.0:${PROXY_PORT} -> ${HTTP_HOST}:${HTTP_PORT}"
+  exec nginx -c /etc/agentmemory/nginx.conf -g 'daemon off;'
 fi
 
 exec gosu "$RUN_AS" agentmemory "$@"

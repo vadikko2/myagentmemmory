@@ -1,6 +1,14 @@
-# Local overrides only — not used by Timeweb Apps.
+# Local dev: direct agentmemory on 3111 (no in-container nginx).
 services:
   agentmemory:
+    ports:
+      - "3111:3111"
+    environment:
+      ENABLE_NGINX_PROXY: "false"
+      PORT: "3111"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:3111/agentmemory/livez"]
+      start_period: 60s
     volumes:
       - ./.data:/data
     restart: unless-stopped

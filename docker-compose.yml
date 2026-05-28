@@ -1,13 +1,10 @@
 # Timeweb Cloud Apps — deploy manifest.
 #
-# How Timeweb routing works:
-#   - Ports 80/443 on the domain are Timeweb nginx (do NOT map "80:3111" here).
-#   - This file maps container port 3111; nginx proxies 80/443 -> 3111.
-#   - agentmemory MUST be the first service (only the first gets the domain proxy).
-#   - Public URL: http(s)://<app>.twc1.net/agentmemory/livez  — without :3111
-#   - Mount /data via Apps -> Storage (volumes: forbidden in compose on Timeweb).
+# Routing: Timeweb nginx (80/443 on domain) -> container :8080 -> internal nginx -> agentmemory :3111
+# Public URL: http(s)://<app>.twc1.net/agentmemory/livez  (no port in URL)
+# Panel: container port 8080, health path /agentmemory/livez, Storage mount /data
 #
-# Local dev: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Local direct mode: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 version: "3.9"
 
 services:
@@ -16,12 +13,12 @@ services:
       context: ./deploy/timeweb
       dockerfile: Dockerfile
     ports:
-      - "3111:3111"
+      - "8080:8080"
     environment:
-      PORT: "3111"
+      ENABLE_NGINX_PROXY: "true"
+      PROXY_PORT: "8080"
       III_REST_PORT: "3111"
       III_STREAMS_PORT: "3112"
-      # Optional: set in Timeweb panel for CORS, e.g. https://vadikko2-myagentmemmory-64e9.twc1.net
       APP_PUBLIC_URL: "${APP_PUBLIC_URL:-}"
       ENABLE_BACKUPS: "${ENABLE_BACKUPS:-false}"
       ENABLE_AUTO_RESTORE: "${ENABLE_AUTO_RESTORE:-true}"
@@ -33,8 +30,8 @@ services:
       AWS_S3_PREFIX: "${AWS_S3_PREFIX:-agentmemory-backups}"
       BACKUP_KEEP_COUNT: "${BACKUP_KEEP_COUNT:-7}"
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://127.0.0.1:3111/agentmemory/livez"]
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/agentmemory/livez"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 120s
