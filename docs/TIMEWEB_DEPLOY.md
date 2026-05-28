@@ -31,17 +31,36 @@
 
 Создайте ключи доступа на странице бакета.
 
-## 2. Соберите и опубликуйте образ
+## 2. Деплой в Apps
 
-### Вариант A: деплой из Git (рекомендуется)
+### Вариант A: Docker Compose из Git (рекомендуется)
 
-1. Загрузите этот репозиторий в GitHub/GitLab.
-2. В Timeweb Apps: **Создать приложение → Docker / Git**.
-3. Укажите репозиторий и ветку.
-4. **Dockerfile path:** `deploy/timeweb/Dockerfile`
-5. **Build context:** `deploy/timeweb`
+1. Загрузите репозиторий в GitHub/GitLab.
+2. Timeweb Apps → **Создать приложение → Docker Compose**.
+3. Укажите репозиторий и ветку. В корне должен быть **`docker-compose.yml`** (без секции `volumes` — это требование Timeweb).
+4. В панели Apps → **Storage**: смонтируйте persistent volume в **`/data`** (1+ GB).
+5. Порт приложения: **3111**, health check: **`/agentmemory/livez`**.
 
-### Вариант B: образ из registry
+Проверка манифеста локально:
+
+```bash
+docker compose config
+```
+
+Локальный запуск **с** bind-mount (не для Timeweb):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+```
+
+### Вариант B: только Dockerfile (без Compose)
+
+1. Apps → Docker / Git.
+2. **Dockerfile path:** `deploy/timeweb/Dockerfile`
+3. **Build context:** `deploy/timeweb`
+4. Storage → mount **`/data`**, порт **3111**.
+
+### Вариант C: образ из registry
 
 ```bash
 cd deploy/timeweb
@@ -122,7 +141,7 @@ curl -sf -H "Authorization: Bearer <secret>" \
 cp .env.example .env
 # отредактируйте .env при необходимости
 
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 curl -sf http://localhost:3111/agentmemory/livez
 ```
 
@@ -157,6 +176,7 @@ mkdir -p restored && tar -xzf backup.tar.gz -C restored
 
 | Симптом | Решение |
 |---------|---------|
+| Ошибка деплоя Compose без деталей | Уберите `volumes:` из `docker-compose.yml`; том `/data` только через Apps → Storage |
 | Health check fails | Увеличьте grace period; cold start ~10–30 с |
 | 401 от API | Проверьте `Authorization: Bearer` и секрет из `/data/.hmac` |
 | Пустая память после рестарта | Включите том `/data`; проверьте S3 restore в логах |

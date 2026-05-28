@@ -10,10 +10,16 @@ Deploy artifacts for [agentmemory](https://github.com/rohitg00/agentmemory) on *
 | Connect Cursor | [docs/CURSOR_CONFIG.md](docs/CURSOR_CONFIG.md) |
 | Regenerate files with an AI agent | [docs/DEPLOY_AGENT_PROMPT.md](docs/DEPLOY_AGENT_PROMPT.md) |
 
+## Deploy on Timeweb Apps (Docker Compose)
+
+Use the root **`docker-compose.yml`** in Apps (Git deploy). It has **no `volumes`** — attach persistent storage at **`/data`** in the Apps → Storage panel.
+
+Set app port **3111**, health path **`/agentmemory/livez`**, and S3 env vars (see [docs/TIMEWEB_DEPLOY.md](docs/TIMEWEB_DEPLOY.md)).
+
 ## Local smoke test
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 curl -sf http://localhost:3111/agentmemory/livez
 ```
 
@@ -23,7 +29,8 @@ Copy `AGENTMEMORY_SECRET=...` from container logs on first boot.
 
 ```
 deploy/timeweb/   Dockerfile, entrypoint.sh, backup.sh
-docker-compose.yml   local dev only
+docker-compose.yml        Timeweb Apps (no volumes)
+docker-compose.local.yml  local bind mount .data:/data
 docs/             deployment and Cursor guides
 ```
 

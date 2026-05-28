@@ -1,0 +1,6 @@
+# Local overrides only — not used by Timeweb Apps.
+services:
+  agentmemory:
+    volumes:
+      - ./.data:/data
+    restart: unless-stopped

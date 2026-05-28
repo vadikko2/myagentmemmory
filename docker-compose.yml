@@ -1,5 +1,7 @@
-# Local smoke-test only. Timeweb Cloud Apps forbids `volumes:` in compose manifests;
-# mount /data via the Apps Storage UI in production.
+# Timeweb Cloud Apps — deploy manifest (no `volumes:`; mount /data in Apps → Storage).
+# Local dev with a bind mount: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+version: "3.9"
+
 services:
   agentmemory:
     build:
@@ -7,15 +9,19 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3111:3111"
-    volumes:
-      - ./.data:/data
     environment:
       ENABLE_BACKUPS: "${ENABLE_BACKUPS:-false}"
       ENABLE_AUTO_RESTORE: "${ENABLE_AUTO_RESTORE:-true}"
+      AWS_S3_BUCKET: "${AWS_S3_BUCKET:-}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}"
+      AWS_ENDPOINT_URL: "${AWS_ENDPOINT_URL:-https://s3.twcstorage.ru}"
+      AWS_REGION: "${AWS_REGION:-ru-1}"
+      AWS_S3_PREFIX: "${AWS_S3_PREFIX:-agentmemory-backups}"
+      BACKUP_KEEP_COUNT: "${BACKUP_KEEP_COUNT:-7}"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:3111/agentmemory/livez"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 45s
-    restart: unless-stopped

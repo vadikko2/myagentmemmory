@@ -26,7 +26,8 @@
 | `deploy/timeweb/entrypoint.sh` | restore → HMAC → cron → exec agentmemory |
 | `deploy/timeweb/backup.sh` | `restore` / `backup`, S3 Timeweb endpoint |
 | `deploy/timeweb/.dockerignore` | Исключения build context |
-| `docker-compose.yml` | Локальный тест (volume `.data:/data`) |
+| `docker-compose.yml` | Timeweb Apps (без `volumes`) |
+| `docker-compose.local.yml` | Локально: `.data:/data` |
 | `.dockerignore` | Корневой ignore |
 | `.env.example` | Шаблон переменных |
 | `.gitignore` | `.env`, `.data/` |
