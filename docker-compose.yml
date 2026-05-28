@@ -1,13 +1,11 @@
-# Timeweb Cloud Apps — deploy manifest.
+# Timeweb Cloud Apps — production manifest (NO ports: section).
+# Timeweb routes the domain using the panel "container port" (8080 or 80), not host port mapping.
+# ports: in compose on Timeweb breaks routing (docker-proxy steals :8080).
 #
-# agentmemory listens on 0.0.0.0:8080; nginx on 0.0.0.0:80 -> :8080
-# Panel: set container port to 8080 OR 80 (both work after this fix)
-# Do NOT use "8080:8080" in ports — docker reserves :8080 and breaks the app bind
+# Panel: container port 8080 (or 80), health /agentmemory/livez, Storage /data
+# Test: curl http://<app>.twc1.net/agentmemory/livez
 #
-# Local test: curl http://localhost:8080/agentmemory/livez  (maps host 8080 -> container :8080)
-#             curl http://localhost:8081/agentmemory/livez  (maps host 8081 -> container :80 nginx)
-#
-# Local direct mode: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Local testing: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 version: "3.9"
 
 services:
@@ -15,14 +13,10 @@ services:
     build:
       context: ./deploy/timeweb
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-      - "8081:80"
     environment:
       ENABLE_NGINX_PROXY: "true"
       III_REST_PORT: "8080"
       III_STREAMS_PORT: "8081"
-      ENABLE_PORT_COMPAT: "false"
       APP_PUBLIC_URL: "${APP_PUBLIC_URL:-}"
       ENABLE_BACKUPS: "${ENABLE_BACKUPS:-false}"
       ENABLE_AUTO_RESTORE: "${ENABLE_AUTO_RESTORE:-true}"

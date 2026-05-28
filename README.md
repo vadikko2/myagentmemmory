@@ -12,7 +12,7 @@ Deploy artifacts for [agentmemory](https://github.com/rohitg00/agentmemory) on *
 
 ## Deploy on Timeweb Apps (Docker Compose)
 
-Use the root **`docker-compose.yml`** in Apps (Git deploy). It has **no `volumes`** — attach persistent storage at **`/data`** in the Apps → Storage panel.
+Use root **`docker-compose.yml`** (Git deploy). It has **no `volumes:`** and **no `ports:`** — both break Timeweb routing. Set Storage **`/data`** and container port **8080** in the panel.
 
 Set **container port 80** in the panel (not 8080). Health: **`/agentmemory/livez`**. See [docs/TIMEWEB_DEPLOY.md](docs/TIMEWEB_DEPLOY.md).
 
@@ -20,7 +20,7 @@ Set **container port 80** in the panel (not 8080). Health: **`/agentmemory/livez
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
-curl -sf http://localhost:3111/agentmemory/livez
+curl -sf http://localhost:8080/agentmemory/livez
 ```
 
 Copy `AGENTMEMORY_SECRET=...` from container logs on first boot.

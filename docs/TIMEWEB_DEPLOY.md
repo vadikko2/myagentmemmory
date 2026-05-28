@@ -37,7 +37,9 @@
 
 1. Загрузите репозиторий в GitHub/GitLab.
 2. Timeweb Apps → **Создать приложение → Docker Compose**.
-3. Укажите репозиторий и ветку. В корне должен быть **`docker-compose.yml`** (без секции `volumes` — это требование Timeweb).
+3. Укажите репозиторий и ветку. В корне **`docker-compose.yml`**:
+   - **без** `volumes:` (том `/data` только в панели Storage);
+   - **без** `ports:` (иначе edge Timeweb не доходит до приложения — таймаут при curl).
 4. В панели Apps → **Storage**: смонтируйте persistent volume в **`/data`** (1+ GB).
 5. **Порт контейнера** в панели: **8080** (рекомендуется) или **80** (nginx). agentmemory слушает `0.0.0.0:8080`. Health: **`/agentmemory/livez`**.
 6. Публичный URL **без порта**: `http://<app>.twc1.net/agentmemory/livez` (Timeweb 80/443 → контейнер **8080**).
@@ -185,6 +187,7 @@ mkdir -p restored && tar -xzf backup.tar.gz -C restored
 
 | Симптом | Решение |
 |---------|---------|
+| curl таймаут, в логах `OK :80/livez` | Уберите `ports:` из `docker-compose.yml`; в панели укажите порт контейнера **8080** |
 | Ошибка деплоя Compose без деталей | Уберите `volumes:` из `docker-compose.yml`; том `/data` только через Apps → Storage |
 | Health check fails | Увеличьте grace period; cold start ~10–30 с |
 | 401 от API | Проверьте `Authorization: Bearer` и секрет из `/data/.hmac` |
