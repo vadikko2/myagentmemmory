@@ -39,7 +39,7 @@
 2. Timeweb Apps → **Создать приложение → Docker Compose**.
 3. Укажите репозиторий и ветку. В корне должен быть **`docker-compose.yml`** (без секции `volumes` — это требование Timeweb).
 4. В панели Apps → **Storage**: смонтируйте persistent volume в **`/data`** (1+ GB).
-5. **Порт контейнера** в панели: **80** (nginx внутри контейнера; agentmemory на 8080 за nginx). Health: **`/agentmemory/livez`**.
+5. **Порт контейнера** в панели: сначала **8080**, если таймаут — **80**. nginx слушает оба; agentmemory на 8080. Health: **`/agentmemory/livez`**.
 6. Публичный URL **без порта**: `http://<app>.twc1.net/agentmemory/livez` (Timeweb 80/443 → контейнер **8080**).
 7. Опционально в env: `APP_PUBLIC_URL=https://<app>.twc1.net` (для CORS).
 
@@ -76,7 +76,7 @@ docker push your-registry/agentmemory:latest
 
 | Параметр | Значение |
 |----------|----------|
-| Порт контейнера | **80** (nginx; agentmemory на 127.0.0.1:8080) |
+| Порт контейнера | **8080** или **80** (nginx на обоих → agentmemory :8080) |
 | Health check path | **`/agentmemory/livez`** |
 | Grace period | ≥ **60** секунд (cold start) |
 | Публичный доступ | `https://<app>.twc1.net/...` **без** `:3111` |
@@ -136,7 +136,9 @@ curl -sf -H "Authorization: Bearer <secret>" \
   "https://<app>.twc1.net/agentmemory/livez"
 ```
 
-Прямой `:3111` на домене часто **не отвечает** (таймаут) — это нормально для Apps; используйте URL без порта.
+Прямой `:3111` на домене часто **не отвечает** — используйте URL без порта.
+
+После деплоя в логах ищите блок `post-start connectivity check` — должны быть `OK :80/livez` и `OK :8080/livez`. Если FAIL — пришлите лог в поддержку Timeweb.
 
 ## 6. Подключите Cursor
 

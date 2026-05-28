@@ -140,13 +140,11 @@ start_port_compat() {
   if [ "${ENABLE_PORT_COMPAT:-true}" != "true" ]; then
     return 0
   fi
-  for compat_port in 3111 8080; do
-    if [ "$compat_port" = "$HTTP_PORT" ]; then
-      continue
-    fi
-    socat "TCP-LISTEN:${compat_port},bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
-    echo "port-compat: 0.0.0.0:${compat_port} -> 127.0.0.1:${HTTP_PORT}"
-  done
+  # 3111 only — nginx already binds 80 and 8080
+  if [ "$HTTP_PORT" != "3111" ]; then
+    socat "TCP-LISTEN:3111,bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
+    echo "port-compat: 0.0.0.0:3111 -> 127.0.0.1:${HTTP_PORT}"
+  fi
 }
 
 if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
@@ -177,7 +175,15 @@ if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
     exit 1
   fi
 
-  echo "nginx: starting on 0.0.0.0:${PROXY_PORT:-80} -> ${HTTP_HOST}:${HTTP_PORT}"
+  echo "nginx: starting on 0.0.0.0:80 and 0.0.0.0:8080 -> ${HTTP_HOST}:${HTTP_PORT}"
+  (
+    sleep 15
+    echo "=== post-start connectivity check ==="
+    curl -sf "http://127.0.0.1:80/agentmemory/livez" && echo " OK :80/livez" || echo " FAIL :80/livez"
+    curl -sf "http://127.0.0.1:8080/agentmemory/livez" && echo " OK :8080/livez" || echo " FAIL :8080/livez"
+    ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null || true
+    echo "=== end connectivity check ==="
+  ) &
   exec nginx -c /etc/agentmemory/nginx.conf -g 'daemon off;'
 fi
 

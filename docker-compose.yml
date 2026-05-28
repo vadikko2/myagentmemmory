@@ -1,13 +1,13 @@
 # Timeweb Cloud Apps — deploy manifest.
 #
-# Routing (Timeweb docs: first service uses CONTAINER port from "host:container"):
-#   domain :80/:443 -> Timeweb edge -> container :80 (nginx) -> agentmemory :8080
-#   compose "8080:80" = publish container port 80 (do NOT use "80:80" — host 80 is reserved)
+# nginx listens on container ports 80 AND 8080 -> agentmemory 127.0.0.1:8080
+# First ports: entry is 8080:8080 — Timeweb often routes the domain to that container port.
+# Also publish 80 for platforms that route to container :80.
 #
-# Panel: container port 80, health /agentmemory/livez, Storage /data
+# Panel: try container port 8080 first, then 80. Health: /agentmemory/livez
 # Test: curl http://<app>.twc1.net/agentmemory/livez
 #
-# Local direct: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Local: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 version: "3.9"
 
 services:
@@ -16,10 +16,10 @@ services:
       context: ./deploy/timeweb
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "8080:8080"
+      - "8081:80"
     environment:
       ENABLE_NGINX_PROXY: "true"
-      PROXY_PORT: "80"
       III_REST_PORT: "8080"
       III_STREAMS_PORT: "8081"
       ENABLE_PORT_COMPAT: "true"
@@ -34,7 +34,7 @@ services:
       AWS_S3_PREFIX: "${AWS_S3_PREFIX:-agentmemory-backups}"
       BACKUP_KEEP_COUNT: "${BACKUP_KEEP_COUNT:-7}"
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://127.0.0.1:80/agentmemory/livez"]
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/agentmemory/livez"]
       interval: 30s
       timeout: 10s
       retries: 5
