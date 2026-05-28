@@ -13,7 +13,7 @@ ENABLE_NGINX_PROXY="${ENABLE_NGINX_PROXY:-true}"
 PROXY_PORT="${PROXY_PORT:-8080}"
 
 if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
-  HTTP_PORT="${III_REST_PORT:-3111}"
+  HTTP_PORT="${III_REST_PORT:-8080}"
   HTTP_HOST="127.0.0.1"
 else
   HTTP_PORT="${PORT:-${III_REST_PORT:-3111}}"
@@ -98,7 +98,7 @@ EOF
 chown "$RUN_AS" "$III_CONFIG"
 
 if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
-  echo "agentmemory: internal ${HTTP_HOST}:${HTTP_PORT}; public nginx 0.0.0.0:${PROXY_PORT} (Timeweb 80/443 -> ${PROXY_PORT})"
+  echo "agentmemory: internal ${HTTP_HOST}:${HTTP_PORT}; nginx 0.0.0.0:${PROXY_PORT:-80} (Timeweb domain -> container :${PROXY_PORT:-80})"
 else
   echo "agentmemory: listening on ${HTTP_HOST}:${HTTP_PORT}"
 fi
@@ -136,8 +136,22 @@ else
   echo "agentmemory: automatic S3 backups disabled (set ENABLE_BACKUPS=true and AWS_S3_BUCKET)"
 fi
 
+start_port_compat() {
+  if [ "${ENABLE_PORT_COMPAT:-true}" != "true" ]; then
+    return 0
+  fi
+  for compat_port in 3111 8080; do
+    if [ "$compat_port" = "$HTTP_PORT" ]; then
+      continue
+    fi
+    socat "TCP-LISTEN:${compat_port},bind=0.0.0.0,fork,reuseaddr" "TCP:127.0.0.1:${HTTP_PORT}" &
+    echo "port-compat: 0.0.0.0:${compat_port} -> 127.0.0.1:${HTTP_PORT}"
+  done
+}
+
 if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
   mkdir -p /tmp/nginx-client-body /tmp/nginx-proxy
+  start_port_compat
   gosu "$RUN_AS" agentmemory "$@" &
   AM_PID=$!
 
@@ -163,8 +177,9 @@ if [ "$ENABLE_NGINX_PROXY" = "true" ]; then
     exit 1
   fi
 
-  echo "nginx: starting on 0.0.0.0:${PROXY_PORT} -> ${HTTP_HOST}:${HTTP_PORT}"
+  echo "nginx: starting on 0.0.0.0:${PROXY_PORT:-80} -> ${HTTP_HOST}:${HTTP_PORT}"
   exec nginx -c /etc/agentmemory/nginx.conf -g 'daemon off;'
 fi
 
+start_port_compat
 exec gosu "$RUN_AS" agentmemory "$@"

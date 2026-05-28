@@ -1,10 +1,11 @@
-# Local dev: agentmemory on 3111 (familiar port).
+# Local dev: agentmemory on 3111 (no nginx).
 services:
   agentmemory:
     ports:
       - "3111:3111"
     environment:
       ENABLE_NGINX_PROXY: "false"
+      ENABLE_PORT_COMPAT: "false"
       PORT: "3111"
       III_REST_PORT: "3111"
       III_STREAMS_PORT: "3112"
