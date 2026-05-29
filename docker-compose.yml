@@ -27,6 +27,7 @@ services:
       AWS_REGION: "${AWS_REGION:-ru-1}"
       AWS_S3_PREFIX: "${AWS_S3_PREFIX:-agentmemory-backups}"
       BACKUP_KEEP_COUNT: "${BACKUP_KEEP_COUNT:-7}"
+      BACKUP_CRON_SCHEDULE: "${BACKUP_CRON_SCHEDULE:-0 */6 * * *}"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/agentmemory/livez"]
       interval: 30s

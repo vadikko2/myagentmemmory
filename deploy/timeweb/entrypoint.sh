@@ -129,10 +129,11 @@ AGENTMEMORY_SECRET="$(cat "$HMAC_FILE")"
 export AGENTMEMORY_SECRET
 
 if [ "${ENABLE_BACKUPS:-false}" = "true" ] && [ -n "${AWS_S3_BUCKET:-}" ]; then
-  echo "0 */6 * * * root /usr/local/bin/backup.sh backup >> /var/log/backup.log 2>&1" > /etc/cron.d/agentmemory-backup
+  BACKUP_CRON_SCHEDULE="${BACKUP_CRON_SCHEDULE:-0 */6 * * *}"
+  echo "${BACKUP_CRON_SCHEDULE} root /usr/local/bin/backup.sh backup >> /var/log/backup.log 2>&1" > /etc/cron.d/agentmemory-backup
   chmod 0644 /etc/cron.d/agentmemory-backup
   cron
-  echo "agentmemory: S3 backup scheduler started (every 6 hours)"
+  echo "agentmemory: S3 backup scheduler started (cron: ${BACKUP_CRON_SCHEDULE})"
 else
   echo "agentmemory: automatic S3 backups disabled (set ENABLE_BACKUPS=true and AWS_S3_BUCKET)"
 fi

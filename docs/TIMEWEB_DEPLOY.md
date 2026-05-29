@@ -99,6 +99,7 @@ docker push your-registry/agentmemory:latest
 | `AWS_REGION` | да | `ru-1` | Регион |
 | `AWS_S3_PREFIX` | нет | `agentmemory-backups` | Префикс ключей в бакете |
 | `BACKUP_KEEP_COUNT` | нет | `7` | Сколько архивов хранить |
+| `BACKUP_CRON_SCHEDULE` | нет | `0 */6 * * *` | Расписание cron (тест: `*/10 * * * *` — каждые 10 мин) |
 
 **Не задавайте** `AGENTMEMORY_SECRET` в Apps — секрет создаётся в `/data/.hmac` при первом запуске.
 
